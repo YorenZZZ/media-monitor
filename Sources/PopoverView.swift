@@ -1,4 +1,3 @@
-import Combine
 import SwiftUI
 
 private let defaultAccent = Color(red: 0.98, green: 0.36, blue: 0.55)
@@ -487,10 +486,9 @@ struct LocalState<Value>: DynamicProperty {
 // MARK: - Settings
 
 struct SettingsView: View {
-    @LocalState private var installed = ChromeExtension.isInstalled
+    @LocalState private var installed = false
     @LocalState private var chromeMissing = false
     @LocalState private var opened = false
-    private let recheck = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -505,9 +503,8 @@ struct SettingsView: View {
                     }
                     Spacer(minLength: 4)
                     if installed {
-                        Label("Chrome 扩展已安装", systemImage: "checkmark.circle.fill")
-                            .font(.system(size: 11, weight: .medium)).foregroundStyle(.green)
-                            .labelStyle(.titleAndIcon)
+                        Button {} label: { Label("已安装", systemImage: "checkmark") }
+                            .controlSize(.small).disabled(true).help("Chrome 扩展已安装")
                     } else {
                         Button(opened ? "重新打开" : "安装") { install() }.controlSize(.small)
                     }
@@ -531,7 +528,14 @@ struct SettingsView: View {
             .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.primary.opacity(0.05)))
         }
         .padding(.horizontal, 12).padding(.bottom, 12)
-        .onReceive(recheck) { _ in installed = ChromeExtension.isInstalled }
+        // Re-checked for as long as the page is open, so installing in Chrome flips it without reopening.
+        // (A Timer.publish stored in the view would restart on every popover refresh and never fire.)
+        .task {
+            while !Task.isCancelled {
+                installed = await Task.detached(priority: .utility) { ChromeExtension.isInstalled }.value
+                try? await Task.sleep(for: .seconds(2))
+            }
+        }
     }
 
     private func install() {
