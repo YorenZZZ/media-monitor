@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "Media Monitor Browser Bridge",
+  "version": "0.5.0",
+  "description": "Makes 哔哩哔哩, 虎牙 and 抖音 web players available to the local Media Monitor menu bar app.",
+  "permissions": [
+    "nativeMessaging",
+    "tabs",
+    "scripting"
+  ],
+  "host_permissions": [
+    "*://*.bilibili.com/*",
+    "*://*.huya.com/*",
+    "*://*.douyin.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.bilibili.com/*",
+        "*://*.huya.com/*",
+        "*://*.douyin.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": true,
+      "match_about_blank": true
+    }
+  ],
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5GXtCU7/zVocp9xDuYrqBuAxAJ2JNRqKXAus4gnvRKZCxRfG4dC7D0kAKUdEb58mCgG4a/pfSEcdH1xl0EE+xZ73mWjXpINiKMQxXjNrnHhFvQ6nEBupiGMxwk3Cj4iUf9NN/Qpt3B779JKuwlmwe8D15r8l7Ey5uyuWN7Nqx35gsMqYjprEb1uscUZLS3SD6QYqTFn+N14yAAQe7ZMfo4OPM0pbxj0UpoRAb9IoTRNBOle6735iiw0OC4Wx9bGZhr6P23MRqTqCTs9iPAqVapnnKrum3egmZFJ2U2WLy997nbx3peozj+SdGS2ZZVBqxoyux0MkMRs974kmLcuByQIDAQAB"
+}
