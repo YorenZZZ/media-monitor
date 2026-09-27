@@ -68,11 +68,20 @@ if (!window.__mediaMonitorBridge) {
     }
   }
 
-  timer = setInterval(report, 1000);
-  for (const type of ['play', 'pause', 'ended', 'seeked', 'loadedmetadata', 'emptied']) {
-    document.addEventListener(type, report, true);
+  // This runs in every frame of every page, so it only polls while the frame has media to report;
+  // media events (captured on the document, as they do not bubble) wake it up again.
+  function tick() {
+    report();
+    if (!reported && timer) { clearInterval(timer); timer = null; }
   }
-  report();
+  function wake() {
+    report();
+    if (reported && !timer) timer = setInterval(tick, 1000);
+  }
+  for (const type of ['play', 'playing', 'pause', 'ended', 'seeked', 'loadedmetadata', 'emptied']) {
+    document.addEventListener(type, wake, true);
+  }
+  wake();
 
   chrome.runtime.onMessage.addListener(command => {
     if (command.action === 'next' || command.action === 'previous') {
@@ -87,6 +96,6 @@ if (!window.__mediaMonitorBridge) {
         if (Number.isFinite(value)) element.currentTime = Math.min(Math.max(0, value), element.duration || value);
       }
     }
-    setTimeout(report, 150);
+    setTimeout(wake, 150);
   });
 }

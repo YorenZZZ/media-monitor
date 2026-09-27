@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 
 private let defaultAccent = Color(red: 0.98, green: 0.36, blue: 0.55)
@@ -500,7 +501,7 @@ struct SettingsView: View {
                     Image(nsImage: appIcon(bundleID: ChromeExtension.chromeBundleID)).resizable().frame(width: 28, height: 28)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Chrome 扩展").font(.system(size: 13, weight: .semibold))
-                        Text("让哔哩哔哩、虎牙、抖音网页的播放出现在这里").font(.system(size: 10.5)).foregroundStyle(.secondary)
+                        Text("让 Chrome 里所有网页的音视频出现在这里").font(.system(size: 10.5)).foregroundStyle(.secondary)
                     }
                     Spacer(minLength: 4)
                     if installed {

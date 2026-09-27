@@ -1,17 +1,15 @@
 {
   "manifest_version": 3,
   "name": "Media Monitor Browser Bridge",
-  "version": "0.5.0",
-  "description": "Makes 哔哩哔哩, 虎牙 and 抖音 web players available to the local Media Monitor menu bar app.",
+  "version": "0.6.0",
+  "description": "Shows audio and video playing in any Chrome tab in the local Media Monitor menu bar app, and lets it pause, resume and seek them.",
   "permissions": [
     "nativeMessaging",
     "tabs",
     "scripting"
   ],
   "host_permissions": [
-    "*://*.bilibili.com/*",
-    "*://*.huya.com/*",
-    "*://*.douyin.com/*"
+    "<all_urls>"
   ],
   "background": {
     "service_worker": "background.js"
@@ -19,9 +17,7 @@
   "content_scripts": [
     {
       "matches": [
-        "*://*.bilibili.com/*",
-        "*://*.huya.com/*",
-        "*://*.douyin.com/*"
+        "<all_urls>"
       ],
       "js": [
         "content.js"

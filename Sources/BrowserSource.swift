@@ -32,8 +32,8 @@ final class BrowserSource {
             // The extension sends "artist · host" (or just the host).
             var parts = text(e["subtitle"]).components(separatedBy: " · ")
             let host = parts.removeLast()
-            guard let id = e["id"] as? String, !id.isEmpty,
-                  let site = Targets.siteName(forHost: host) else { return nil }
+            guard let id = e["id"] as? String, !id.isEmpty else { return nil }
+            let site = Targets.siteName(forHost: host)
             let duration = max(0, num(e["duration"]))
             let seekable = flag(e["seekable"]) && duration > 0
             let artwork = text(e["artwork"])

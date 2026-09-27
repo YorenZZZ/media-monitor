@@ -17,7 +17,7 @@ A macOS menu bar app that gathers the music, videos and live streams you are pla
 | Bilibili, LX Music, IINA (desktop apps) | Title and progress from the system Now Playing feed | Play/pause, seek, etc. (depends on the app) |
 | Douyin (抖音, desktop app) | Whether it is playing | Play/pause |
 | Huya Live (虎牙直播, desktop app) | Room title, streamer, whether it is making sound | Clicking brings the app forward (it does not accept outside control) |
-| Bilibili, Huya and Douyin in Chrome | Title, progress, live status | Play/pause, seek, skip ±10 s, switch to the tab |
+| Audio and video on any web page in Chrome | Title, site, progress, live status | Play/pause, seek, skip ±10 s, switch to the tab; previous/next on YouTube, Bilibili, NetEase Cloud Music, QQ Music, Spotify and SoundCloud |
 
 When several sources play at once, the one that started most recently is shown at the top and the rest are listed under "其他会话" (other sessions).
 
@@ -65,7 +65,7 @@ The extension files live in `~/Library/Application Support/Media Monitor/ChromeE
 ## Privacy
 
 - Everything stays on your Mac and nothing is uploaded. The only network request is downloading cover art when a player gives it as a web URL.
-- The Chrome extension sends only the page title, site hostname, duration, current position and playing state to the local Media Monitor app over Chrome native messaging.
+- The Chrome extension asks for access to all sites so that media on any page is picked up. It only reads the state of the page's audio and video elements, and sends only the page title, site hostname, duration, current position and playing state to the local Media Monitor app over Chrome native messaging. It reads nothing else on the page.
 - Huya Live's audio is only used to measure its current loudness. It is never recorded or saved.
 
 ## Uninstall

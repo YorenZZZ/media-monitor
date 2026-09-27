@@ -113,13 +113,12 @@ final class MediaStore: ObservableObject {
                     all[index].artworkKey = s.artworkKey
                 }
             } else if s.bundleID == "com.google.Chrome" {
-                // Extension not connected: still show a target site from Chrome's own entry.
-                if let site = Targets.siteName(forChromeTitle: s.title) {
-                    all.append(MediaItem(
-                        id: "system:" + s.bundleID, kind: .system, appName: site, bundleID: s.bundleID,
-                        title: s.title, position: s.elapsed, duration: s.duration, isPlaying: s.playing,
-                        canSeek: s.duration > 0, canFocus: true, artworkKey: s.artworkKey, sampledAt: s.sampledAt))
-                }
+                // Extension not connected: fall back to Chrome's own entry (the front media tab only).
+                all.append(MediaItem(
+                    id: "system:" + s.bundleID, kind: .system,
+                    appName: Targets.siteName(forChromeTitle: s.title) ?? "Chrome 网页", bundleID: s.bundleID,
+                    title: s.title, artist: s.artist, position: s.elapsed, duration: s.duration, isPlaying: s.playing,
+                    canSeek: s.duration > 0, canFocus: true, artworkKey: s.artworkKey, sampledAt: s.sampledAt))
             } else if let name = Targets.apps[s.bundleID] {
                 all.append(MediaItem(
                     id: "system:" + s.bundleID, kind: .system, appName: name, bundleID: s.bundleID,

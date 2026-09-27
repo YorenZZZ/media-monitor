@@ -57,7 +57,7 @@ enum Targets {
         "com.soda.music": "汽水音乐",
         "com.yy.kiwihd": "虎牙直播",
     ]
-    /// Web players in Chrome, matched by host suffix.
+    /// Web players in Chrome with a known name, matched by host suffix; other sites show their host.
     static let sites: [(suffix: String, name: String)] = [
         ("bilibili.com", "哔哩哔哩"),
         ("huya.com", "虎牙直播"),
@@ -65,8 +65,10 @@ enum Targets {
     ]
     /// Desktop app whose icon stands in for a site's tab, when installed.
     static let siteIcons = ["哔哩哔哩": "com.bilibili.bilibiliPC", "抖音": "com.bytedance.douyin.desktop"]
-    static func siteName(forHost host: String) -> String? {
-        sites.first { host == $0.suffix || host.hasSuffix("." + $0.suffix) }?.name
+    static func siteName(forHost host: String) -> String {
+        if let known = sites.first(where: { host == $0.suffix || host.hasSuffix("." + $0.suffix) }) { return known.name }
+        if host.hasPrefix("www.") { return String(host.dropFirst(4)) }
+        return host.isEmpty ? "网页" : host
     }
     /// Fallback when the extension is not connected: Chrome's own Now Playing entry, recognised by its tab title.
     static func siteName(forChromeTitle title: String) -> String? {
