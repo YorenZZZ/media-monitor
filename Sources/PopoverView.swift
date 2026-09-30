@@ -75,7 +75,7 @@ struct PopoverView: View {
         HStack(spacing: 10) {
             Image(systemName: "hand.raised.fill").foregroundStyle(.orange)
             VStack(alignment: .leading, spacing: 2) {
-                Text("读取汽水音乐需要辅助功能权限").font(.system(size: 12, weight: .semibold))
+                Text("读取桌面播放器需要辅助功能权限").font(.system(size: 12, weight: .semibold))
                 Text("系统设置 › 隐私与安全性 › 辅助功能").font(.system(size: 10)).foregroundStyle(.secondary)
             }
             Spacer()

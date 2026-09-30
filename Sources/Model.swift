@@ -1,7 +1,7 @@
 import AppKit
 
 enum SourceKind: Int, Comparable {
-    case soda, system, huya, browser
+    case soda, bilibili, system, huya, browser
     static func < (a: SourceKind, b: SourceKind) -> Bool { a.rawValue < b.rawValue }
 }
 
@@ -99,16 +99,21 @@ final class ArtworkCache: ObservableObject {
     @Published private(set) var images: [String: NSImage] = [:]
     private(set) var accents: [String: NSColor] = [:]
     private var loading = Set<String>()
+    private var retryAfter: [String: Date] = [:]
     private var order: [String] = []
 
     func image(for key: String?) -> NSImage? {
         guard let key else { return nil }
         if let image = images[key] { return image }
-        if !loading.contains(key), let url = URL(string: key), url.scheme?.hasPrefix("http") == true {
+        if !loading.contains(key), Date() >= retryAfter[key] ?? .distantPast,
+           let url = URL(string: key), ["http", "https"].contains(url.scheme ?? "") {
             loading.insert(key)
             URLSession.shared.dataTask(with: url) { data, _, _ in
-                guard let data, let image = NSImage(data: data) else { return }
-                DispatchQueue.main.async { self.store(image, for: key) }
+                DispatchQueue.main.async {
+                    self.loading.remove(key)
+                    if let data, let image = NSImage(data: data) { self.store(image, for: key) }
+                    else { self.retryAfter[key] = Date().addingTimeInterval(30) }
+                }
             }.resume()
         }
         return nil
@@ -122,7 +127,7 @@ final class ArtworkCache: ObservableObject {
         images[key] = image
         order.append(key)
         // Keep memory bounded: artwork churns as tracks change.
-        while order.count > 40 { let old = order.removeFirst(); images[old] = nil; accents[old] = nil; loading.remove(old) }
+        while order.count > 40 { let old = order.removeFirst(); images[old] = nil; accents[old] = nil; loading.remove(old); retryAfter[old] = nil }
     }
 
     /// Picks the most vivid of a coarse 8×8 sampling rather than a muddy average.

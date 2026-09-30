@@ -12,12 +12,14 @@ final class MediaStore: ObservableObject {
 
     private let browser = BrowserSource()
     private let soda = SodaSource()
+    private let bilibili = BilibiliSource()
     private let huya = HuyaSource()
     private let system = SystemNowPlayingSource()
     private let fileQueue = DispatchQueue(label: "media-monitor.browser")
 
     private var browserItems: [MediaItem] = []
     private var sodaItem: MediaItem?
+    private var bilibiliItem: MediaItem?
     private var huyaItem: MediaItem?
     private var systemState: SystemNowPlayingSource.State?
     /// Last state of every target app the system reported. macOS only reports one Now Playing app, so when a
@@ -26,12 +28,14 @@ final class MediaStore: ObservableObject {
     /// When each item started playing; the most recent one leads, so pausing it falls back to the previous one.
     private var playStarted: [String: Date] = [:]
     /// When the Now Playing app last said "playing" while not actually sounding (see `checkedAgainstAudio`).
-    private var silentSince: (date: Date, elapsed: Double)?
+    private var silentSince: (bundleID: String, date: Date, elapsed: Double)?
     private var timer: Timer?
     private var inFlight = Set<String>()
     /// Play/pause the user just asked for, held until the source reports it (sources lag by up to a second or two),
     /// so a stale sample cannot flip the item back and reshuffle the list meanwhile.
     private var pendingPlaying: [String: (playing: Bool, until: Date)] = [:]
+    private var sodaNeedsAccessibility = false
+    private var bilibiliNeedsAccessibility = false
 
     /// Hero of the popover: the user's pick, else the first (playing-first) item.
     var selected: MediaItem? { items.first { $0.id == selectedID } ?? items.first }
@@ -45,7 +49,9 @@ final class MediaStore: ObservableObject {
         system.onChange = { [weak self] state in
             guard let self else { return }
             self.systemState = state.map(self.checkedAgainstAudio)
-            if let state, Targets.apps[state.bundleID] != nil { self.systemHistory[state.bundleID] = state }
+            if let checked = self.systemState, Targets.apps[checked.bundleID] != nil {
+                self.systemHistory[checked.bundleID] = checked
+            }
             self.merge()
         }
         system.start()
@@ -65,7 +71,12 @@ final class MediaStore: ObservableObject {
             silentSince = nil; return s
         }
         let now = Date()
-        let since = silentSince ?? (now, s.duration > 0 ? min(s.elapsed, s.duration) : s.elapsed)
+        let since: (bundleID: String, date: Date, elapsed: Double)
+        if let previous = silentSince, previous.bundleID == s.bundleID {
+            since = previous
+        } else {
+            since = (s.bundleID, now, s.duration > 0 ? min(s.elapsed, s.duration) : s.elapsed)
+        }
         silentSince = since
         guard now.timeIntervalSince(since.date) > 4 else { return s }
         s.playing = false; s.elapsed = since.elapsed
@@ -75,12 +86,21 @@ final class MediaStore: ObservableObject {
     func refresh() {
         poll("browser", on: fileQueue, browser.poll) { self.browserItems = $0 }
         poll("huya", on: huya.queue, huya.poll) { self.huyaItem = $0 }
+        poll("bilibili", on: bilibili.queue, bilibili.poll) { result in
+            switch result {
+            case .none: self.bilibiliItem = nil; self.bilibiliNeedsAccessibility = false
+            case .needsPermission: self.bilibiliItem = nil; self.bilibiliNeedsAccessibility = true
+            case .item(let item): self.bilibiliItem = item; self.bilibiliNeedsAccessibility = false
+            }
+            self.needsAccessibility = self.sodaNeedsAccessibility || self.bilibiliNeedsAccessibility
+        }
         poll("soda", on: soda.queue, soda.poll) { result in
             switch result {
-            case .none: self.sodaItem = nil; self.needsAccessibility = false
-            case .needsPermission: self.sodaItem = nil; self.needsAccessibility = true
-            case .item(let item): self.sodaItem = item; self.needsAccessibility = false
+            case .none: self.sodaItem = nil; self.sodaNeedsAccessibility = false
+            case .needsPermission: self.sodaItem = nil; self.sodaNeedsAccessibility = true
+            case .item(let item): self.sodaItem = item; self.sodaNeedsAccessibility = false
             }
+            self.needsAccessibility = self.sodaNeedsAccessibility || self.bilibiliNeedsAccessibility
         }
     }
 
@@ -101,6 +121,7 @@ final class MediaStore: ObservableObject {
     private func merge() {
         var all = browserItems
         if let sodaItem { all.append(sodaItem) }
+        if let bilibiliItem { all.append(bilibiliItem) }
         if let huyaItem { all.append(huyaItem) }
 
         if let s = systemState {
@@ -216,11 +237,13 @@ final class MediaStore: ObservableObject {
             if case .focus = command { activate(item.bundleID) }
         case .soda:
             if case .focus = command { activate(item.bundleID) } else { soda.perform(command, currentlyPlaying: item.isPlaying) }
+        case .bilibili:
+            if case .focus = command { activate(item.bundleID) } else { bilibili.perform(command, currentlyPlaying: item.isPlaying) }
         case .huya:
             activate(item.bundleID); return
         case .system:
             if case .focus = command { activate(item.bundleID) }
-            else if let current = systemState?.bundleID, current != item.bundleID {
+            else if systemState?.bundleID != item.bundleID {
                 // A background app cannot be controlled through the system feed; bring it forward instead.
                 activate(item.bundleID); return
             } else { system.perform(command) }

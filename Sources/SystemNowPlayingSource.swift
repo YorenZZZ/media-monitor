@@ -44,6 +44,7 @@ final class SystemNowPlayingSource {
     }
 
     private func launch() {
+        guard !stopped else { return }
         guard let dylib = Bundle.main.url(forResource: "libNowPlayingHelper", withExtension: "dylib") else { return }
         let p = Process()
         p.executableURL = URL(fileURLWithPath: "/usr/bin/perl")
@@ -64,8 +65,7 @@ final class SystemNowPlayingSource {
                 guard !self.stopped else { return }
                 DispatchQueue.main.async { self.onChange?(nil) }
                 // Keep trying, but back off if the helper cannot run at all.
-                self.queue.asyncAfter(deadline: .now() + self.restartDelay) { self.launch() }
-                self.restartDelay = min(self.restartDelay * 2, 60)
+                self.scheduleRestart()
             }
         }
         do {
@@ -74,7 +74,13 @@ final class SystemNowPlayingSource {
             input = stdin.fileHandleForWriting
         } catch {
             NSLog("Media Monitor: cannot start Now Playing helper: %@", error.localizedDescription)
+            scheduleRestart()
         }
+    }
+
+    private func scheduleRestart() {
+        queue.asyncAfter(deadline: .now() + restartDelay) { [weak self] in self?.launch() }
+        restartDelay = min(restartDelay * 2, 60)
     }
 
     private func consume(_ chunk: Data) {
